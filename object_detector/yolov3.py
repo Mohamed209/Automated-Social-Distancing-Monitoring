@@ -33,6 +33,7 @@ class PeopleDetector:
         print("yolov3 loaded successfully\n")
 
     def predict(self, image, depug=False):
+        image = cv2.resize(image, (800, 800))
         (H, W) = image.shape[:2]
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416),
                                      swapRB=True, crop=False)
@@ -58,6 +59,8 @@ class PeopleDetector:
                     if len(idxs) > 0:
                         # loop over the indexes we are keeping
                         for i in idxs.flatten():
+                            if self._labels[self._classIDs[i]] != 'person':
+                                continue
                             # extract the bounding box coordinates
                             (x, y) = (self._boxes[i][0], self._boxes[i][1])
                             (w, h) = (self._boxes[i][2], self._boxes[i][3])
