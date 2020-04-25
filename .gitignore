@@ -1,4 +1,4 @@
-pretrained-weights/
-venv/
+yolo-coco/
 .vscode/
 __pycache__
+venv/
