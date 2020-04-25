@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 net = PeopleDetector()
 net.load_network()
-image = cv2.imread('test_images/b2.jpg')
+image = cv2.imread('test_images/g2.jpg')
 cents = net.predict(image, depug=True)
 print(cents)
 dist = distance.cdist(cents, cents)
@@ -20,6 +20,7 @@ plt.show()
 for i in range(len(comp)):
     plt.plot([comp[i][0][0], comp[i][1][0]], [
              comp[i][0][1], comp[i][1][1]], '-o')
+plt.title('2D map of predicted people')
 plt.show()
 # cap = cv2.VideoCapture('chaplin.mp4')
 # if (cap.isOpened() == False):

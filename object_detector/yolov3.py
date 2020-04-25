@@ -9,7 +9,7 @@ class PeopleDetector:
                  yoloweights='yolo-coco/yolov3-spp.weights',
                  labelpath='yolo-coco/coco.names',
                  confidence=0.5,
-                 threshold=0.3):
+                 threshold=0.5):
         self._yolocfg = yolocfg
         self._yoloweights = yoloweights
         self._confidence = confidence
