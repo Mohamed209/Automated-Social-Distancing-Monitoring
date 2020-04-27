@@ -1,5 +1,4 @@
 from src.object_detector.yolov3 import PeopleDetector
-from src.postprocessing.post_processor import PostProcessor
 import cv2
 import itertools
 import matplotlib.pyplot as plt
@@ -12,8 +11,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--image', help='Path to image file.')
 parser.add_argument('--video', help='Path to video file.')
 args = parser.parse_args()
+
 net = PeopleDetector()
 net.load_network()
+
 winName = 'predicted people'
 cv2.namedWindow(winName, cv2.WINDOW_NORMAL)
 
@@ -55,27 +56,13 @@ while cv2.waitKey(1) < 0:
         cap.release()
         break
     outs = net.predict(frame)
-    net.process_preds(frame, outs)
+    cents = net.process_preds(frame, outs)
     net.clear_preds()
-    # # Create a 4D blob from a frame.
-    # blob = cv2.dnn.blobFromImage(
-    #     frame, 1/255, (inpWidth, inpHeight), [0, 0, 0], 1, crop=False)
-
-    # # Sets the input to the network
-    # net.setInput(blob)
-
-    # # Runs the forward pass to get output of the output layers
-    # outs = net.forward(getOutputsNames(net))
-
-    # # Remove the bounding boxes with low confidence
-    # postprocess(frame, outs)
-
     # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
     t, _ = net._net.getPerfProfile()
     label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
     cv2.putText(frame, label, (0, 15),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
-
     # Write the frame with the detection boxes
     if (args.image):
         cv2.imwrite(outputFile, frame.astype(np.uint8))
@@ -83,23 +70,3 @@ while cv2.waitKey(1) < 0:
         vid_writer.write(frame.astype(np.uint8))
 
     cv2.imshow(winName, frame)
-
-#image = cv2.imread('data/test_images/b4.jpg')
-#net = PeopleDetector()
-#pp = PostProcessor()
-# net.load_network()
-#cents = net.predict(image, depug=True)[1]
-# pp.plot_centers_distrobution(cents)
-# dist = distance.cdist(cents, cents)
-# comp = list(itertools.combinations(cents, 2))
-# print(comp)
-# np.fill_diagonal(dist, np.nan)
-# print("min dist \n", np.nanmin(dist))
-# cents = np.array(cents).reshape(-1, 2)
-# plt.scatter(x=cents[:, 0], y=cents[:, 1])
-# plt.show()
-# for i in range(len(comp)):
-#     plt.plot([comp[i][0][0], comp[i][1][0]], [
-#              comp[i][0][1], comp[i][1][1]], '-o')
-# plt.title('2D map of predicted people')
-# plt.show()
