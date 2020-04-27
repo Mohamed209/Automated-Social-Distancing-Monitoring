@@ -1,7 +1,9 @@
 import os
 import time
+import itertools
 import cv2
 import numpy as np
+from scipy.spatial import distance
 
 
 class PeopleDetector:
@@ -24,6 +26,8 @@ class PeopleDetector:
         self._classIDs = []
         self._centers = []
         self._layerouts = []
+        self._MIN_DIST = 150
+        self._distances = {}
 
     def load_network(self):
         self._net = cv2.dnn.readNetFromDarknet(
@@ -35,7 +39,7 @@ class PeopleDetector:
         print("yolov3 loaded successfully\n")
 
     def predict(self, image):
-        #image = cv2.resize(image, (800, 800))
+        # image = cv2.resize(image, (800, 800))
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416),
                                      [0, 0, 0], 1, crop=False)
         self._net.setInput(blob)
@@ -51,6 +55,8 @@ class PeopleDetector:
             for detection in out:
                 scores = detection[5:]
                 classId = np.argmax(scores)
+                if classId != 0:  # filter person class
+                    continue
                 confidence = scores[classId]
                 if confidence > self._confidence:
                     center_x = int(detection[0] * frameWidth)
@@ -62,6 +68,7 @@ class PeopleDetector:
                     self._classIDs.append(classId)
                     self._confidences.append(float(confidence))
                     self._boxes.append([left, top, width, height])
+                    self._centers.append((center_x, center_y))
         indices = cv2.dnn.NMSBoxes(
             self._boxes, self._confidences, self._confidence, self._nmsthreshold)
         for i in indices:
@@ -73,6 +80,7 @@ class PeopleDetector:
             height = box[3]
             self.draw_pred(image, self._classIDs[i], self._confidences[i], left,
                            top, left + width, top + height)
+        return self._centers
 
     def clear_preds(self):
         self._boxes = []
@@ -80,15 +88,16 @@ class PeopleDetector:
         self._classIDs = []
         self._centers = []
         self._layerouts = []
+        self._distances = {}
 
     def draw_pred(self, frame, classId, conf, left, top, right, bottom):
         # Draw a bounding box.
         cv2.rectangle(frame, (left, top), (right, bottom), (255, 178, 50), 3)
         label = '%.2f' % conf
         # Get the label for the class name and its confidence
-        if self._classIDs:
-            assert(classId < len(self._classIDs))
-            label = '%s:%s' % (self._labels[classId], label)
+        # if self._classIDs:
+        #     assert(classId < len(self._classIDs))
+        label = '%s:%s' % (self._labels[classId], label)
         # Display the label at the top of the bounding box
         labelSize, baseLine = cv2.getTextSize(
             label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -97,36 +106,24 @@ class PeopleDetector:
             1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
         cv2.putText(frame, label, (left, top),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
-        # for out in layerOutputs:
-        #     for detection in out:
-        #         scores = detection[5:]
-        #         classID = np.argmax(scores)
-        #         # if classID != 0:  # filter people only
-        #         #    continue
-        #         confidence = scores[classID]
-        #         if confidence > self._confidence:
-        #             box = detection[0:4] * np.array([W, H, W, H])
-        #             (centerX, centerY, width, height) = box.astype("int")
-        #             self._centers.append((centerX, centerY))
-        #             x = int(centerX - (width / 2))
-        #             y = int(centerY - (height / 2))
-        #             self._boxes.append([x, y, int(width), int(height)])
-        #             self._confidences.append(float(confidence))
-        #             self._classIDs.append(classID)
-        #             idxs = cv2.dnn.NMSBoxes(self._boxes, self._confidences, self._confidence,
-        #                                     self._threshold)
-        #             if len(idxs) > 0:
-        #                 # loop over the indexes we are keeping
-        #                 for i in idxs.flatten():
-        #                     # extract the bounding box coordinates
-        #                     (x, y) = (self._boxes[i][0], self._boxes[i][1])
-        #                     (w, h) = (self._boxes[i][2], self._boxes[i][3])
-        #                     # draw a bounding box rectangle and label on the image
-        #                     color = [int(c)
-        #                              for c in self._colors[self._classIDs[i]]]
-        #                     cv2.rectangle(
-        #                         image, (x, y), (x + w, y + h), color, 5)
-        #                     text = "{}: {:.4f}".format(
-        #                         self._labels[self._classIDs[i]], self._confidences[i])
-        #                     cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX,
-        #                                 1, color, 3)
+
+        self.find_min_distance(self._centers)
+        min_pair = min(self._distances.keys(), key=(
+            lambda k: self._distances[k]))
+        print("min distance at {}".format(min_pair))
+        cv2.line(frame, min_pair[0], min_pair[1], (0, 0, 255), 9)
+
+    def find_min_distance(self, centers):
+        '''
+        return min eculidian distance between predicted anchor boxes
+        '''
+        centers = self._centers
+        comp = list(itertools.combinations(centers, 2))
+        for pts in comp:
+            self._distances.update({pts: np.linalg.norm(
+                np.asarray(pts[0])-np.asarray(pts[1]))})
+        #print("dist\n", self._distances)
+
+        self._dist_matrix = distance.cdist(centers, centers)
+        np.fill_diagonal(self._dist_matrix, np.nan)
+        return (np.nanmin(self._dist_matrix), np.nanargmin(self._dist_matrix))
