@@ -27,7 +27,7 @@ class PeopleDetector:
         self._centers = []
         self._layerouts = []
         self._MIN_DIST = 150
-        self._distances = {}
+        self._mindistances = {}
 
     def load_network(self):
         self._net = cv2.dnn.readNetFromDarknet(
@@ -88,7 +88,7 @@ class PeopleDetector:
         self._classIDs = []
         self._centers = []
         self._layerouts = []
-        self._distances = {}
+        self._mindistances = {}
 
     def draw_pred(self, frame, classId, conf, left, top, right, bottom):
         # Draw a bounding box.
@@ -108,10 +108,11 @@ class PeopleDetector:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
 
         self.find_min_distance(self._centers)
-        min_pair = min(self._distances.keys(), key=(
-            lambda k: self._distances[k]))
-        print("min distance at {}".format(min_pair))
-        cv2.line(frame, min_pair[0], min_pair[1], (0, 0, 255), 9)
+        # min_pair = min(self._mindistances.keys(), key=(
+        #     lambda k: self._mindistances[k]))
+        # print("min distance at {}".format(min_pair))
+        for k in self._mindistances:
+            cv2.line(frame, k[0], k[1], (0, 0, 255), 7)
 
     def find_min_distance(self, centers):
         '''
@@ -120,10 +121,6 @@ class PeopleDetector:
         centers = self._centers
         comp = list(itertools.combinations(centers, 2))
         for pts in comp:
-            self._distances.update({pts: np.linalg.norm(
-                np.asarray(pts[0])-np.asarray(pts[1]))})
-        #print("dist\n", self._distances)
-
-        self._dist_matrix = distance.cdist(centers, centers)
-        np.fill_diagonal(self._dist_matrix, np.nan)
-        return (np.nanmin(self._dist_matrix), np.nanargmin(self._dist_matrix))
+            ecdist = np.linalg.norm(np.asarray(pts[0])-np.asarray(pts[1]))
+            if ecdist < self._MIN_DIST:
+                self._mindistances.update({pts: ecdist})
