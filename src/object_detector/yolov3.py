@@ -3,7 +3,6 @@ import time
 import itertools
 import cv2
 import numpy as np
-from scipy.spatial import distance
 
 
 class PeopleDetector:
@@ -39,7 +38,6 @@ class PeopleDetector:
         print("yolov3 loaded successfully\n")
 
     def predict(self, image):
-        # image = cv2.resize(image, (800, 800))
         blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416),
                                      [0, 0, 0], 1, crop=False)
         self._net.setInput(blob)
@@ -91,14 +89,9 @@ class PeopleDetector:
         self._mindistances = {}
 
     def draw_pred(self, frame, classId, conf, left, top, right, bottom):
-        # Draw a bounding box.
         cv2.rectangle(frame, (left, top), (right, bottom), (255, 178, 50), 3)
         label = '%.2f' % conf
-        # Get the label for the class name and its confidence
-        # if self._classIDs:
-        #     assert(classId < len(self._classIDs))
         label = '%s:%s' % (self._labels[classId], label)
-        # Display the label at the top of the bounding box
         labelSize, baseLine = cv2.getTextSize(
             label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
         top = max(top, labelSize[1])
@@ -108,15 +101,12 @@ class PeopleDetector:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
 
         self.find_min_distance(self._centers)
-        # min_pair = min(self._mindistances.keys(), key=(
-        #     lambda k: self._mindistances[k]))
-        # print("min distance at {}".format(min_pair))
         for k in self._mindistances:
             cv2.line(frame, k[0], k[1], (0, 0, 255), 7)
 
     def find_min_distance(self, centers):
         '''
-        return min eculidian distance between predicted anchor boxes
+        return min euclidean distance between predicted anchor boxes
         '''
         centers = self._centers
         comp = list(itertools.combinations(centers, 2))
