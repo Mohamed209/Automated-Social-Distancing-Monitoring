@@ -46,7 +46,7 @@ wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names
 python main.py --video 'video path'
 ```
 
-## check sample result
+## check sample result of the implementation
 
 ![my results](mydemo.gif)
 
