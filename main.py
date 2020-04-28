@@ -56,7 +56,7 @@ while cv2.waitKey(1) < 0:
         cap.release()
         break
     outs = net.predict(frame)
-    cents = net.process_preds(frame, outs)
+    net.process_preds(frame, outs)
     net.clear_preds()
     # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
     t, _ = net._net.getPerfProfile()
