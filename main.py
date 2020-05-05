@@ -1,20 +1,24 @@
 from src.object_detector.yolov3 import PeopleDetector
+from src.object_detector.postprocessor import PostProcessor
+from src.visualization.visualizer import CameraViz
 import cv2
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import os
+
+# init yolo network , postprocessor and visualization mode
+net = PeopleDetector()
+net.load_network()
+pp = PostProcessor(filterlist=[0])  # only filter classID 0 >>> person
+
 # Process inputs
 parser = argparse.ArgumentParser(
     description='Run social distancing meter')
 parser.add_argument('--image', help='Path to image file.')
 parser.add_argument('--video', help='Path to video file.')
 args = parser.parse_args()
-
-net = PeopleDetector()
-net.load_network()
-
 winName = 'predicted people'
 cv2.namedWindow(winName, cv2.WINDOW_NORMAL)
 
@@ -56,10 +60,26 @@ while cv2.waitKey(1) < 0:
         cap.release()
         break
     outs = net.predict(frame)
-    net.process_preds(frame, outs)
-    net.clear_preds()
+    indices, boxes, ids, confs, centers = pp.process_preds(frame, outs)
+    cv2.namedWindow('after process pred', cv2.WINDOW_NORMAL)
+    cv2.imshow('after process pred', frame)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cameraviz = CameraViz(indices, frame, ids, confs, boxes, centers)
+    cv2.namedWindow('after canera viz init', cv2.WINDOW_NORMAL)
+    cv2.imshow('after canera viz init', frame)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cameraviz.draw_pred()
+    cv2.namedWindow('after draw pred', cv2.WINDOW_NORMAL)
+    cv2.imshow('after draw pred', frame)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+    cameraviz.reset()
+    # net.process_preds(frame, outs)
+    # net.clear_preds()
     # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-    t, _ = net._net.getPerfProfile()
+    t, _ = net.net.getPerfProfile()
     label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
     cv2.putText(frame, label, (0, 15),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
@@ -69,4 +89,4 @@ while cv2.waitKey(1) < 0:
     else:
         vid_writer.write(frame.astype(np.uint8))
 
-    cv2.imshow(winName, frame)
+    #cv2.imshow(winName, frame)
