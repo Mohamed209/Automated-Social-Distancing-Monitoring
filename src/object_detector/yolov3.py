@@ -33,6 +33,9 @@ class PeopleDetector:
         print("yolo took {:.6f} seconds".format(end - start))
         return(self.__layerouts)
 
+    def clear_outs(self):
+        self.__layerouts = []
+
     # def process_preds(self, image, outs):
     #     (frameHeight, frameWidth) = image.shape[:2]
     #     for out in outs:

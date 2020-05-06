@@ -75,6 +75,7 @@ while cv2.waitKey(1) < 0:
     cv2.imshow('after draw pred', frame)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+    net.clear_out()
     cameraviz.reset()
     # net.process_preds(frame, outs)
     # net.clear_preds()

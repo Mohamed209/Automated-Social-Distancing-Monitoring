@@ -28,10 +28,10 @@ class CameraViz(Visualizer):
         self.__confs = confs
         self.__centers = centers
         self.__critical_dists = {}
+        print("cents", len(self.__centers))
+        print("boxes", len(self.__boxes))
 
     def draw_pred(self):
-        print("centers", len(self.__centers))
-        print("boxes", len(self.__boxes))
         for i in self.__nmsboxes:
             i = i[0]
             box = self.__boxes[i]
@@ -57,9 +57,10 @@ class CameraViz(Visualizer):
                          self.critical_line_color, self.critical_line_thickness)
 
     def reset(self):
+        self.__nmsboxes = []
         self.__boxes = []
-        self.__confs = []
         self.__classIds = []
+        self.__confs = []
         self.__centers = []
         self.__critical_dists = {}
 
