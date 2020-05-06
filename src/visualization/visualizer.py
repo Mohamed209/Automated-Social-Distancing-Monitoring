@@ -5,7 +5,8 @@ import cv2
 class Visualizer:
     def __init__(self, labelpath='yolo_weights/coco.names', detected_object_rect_color=(255, 178, 50),
                  detected_object_rect_thickness=3, label_font=cv2.FONT_HERSHEY_SIMPLEX, label_fontscale=0.5,
-                 label_font_thickness=1, label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0), critical_line_color=(0, 0, 255), critical_line_thickness=7):
+                 label_font_thickness=1, label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0),
+                 critical_line_color=(0, 0, 255), critical_line_thickness=7):
         self._labels = open(labelpath).read().strip().split("\n")
         self.detected_object_rect_color = detected_object_rect_color
         self.detected_object_rect_thickness = detected_object_rect_thickness
@@ -28,8 +29,6 @@ class CameraViz(Visualizer):
         self.__confs = confs
         self.__centers = centers
         self.__critical_dists = {}
-        print("cents", len(self.__centers))
-        print("boxes", len(self.__boxes))
 
     def draw_pred(self):
         for i in self.__nmsboxes:
@@ -55,14 +54,6 @@ class CameraViz(Visualizer):
             for dist in self.__critical_dists:
                 cv2.line(self.__frame, dist[0], dist[1],
                          self.critical_line_color, self.critical_line_thickness)
-
-    def reset(self):
-        self.__nmsboxes = []
-        self.__boxes = []
-        self.__classIds = []
-        self.__confs = []
-        self.__centers = []
-        self.__critical_dists = {}
 
 
 class BirdseyeView(Visualizer):

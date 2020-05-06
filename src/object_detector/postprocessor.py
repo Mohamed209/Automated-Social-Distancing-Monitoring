@@ -3,13 +3,13 @@ import cv2
 
 
 class PostProcessor:
-    def __init__(self, filterlist, confidence=0.5,
+    def __init__(self, filterlist=[0], confidence=0.5,
                  nmsthreshold=0.4):
         self.__boxes = []
         self.__confidences = []
         self.__classIDs = []
         self.__centers = []
-        self.__filterlist = filterlist
+        self.__filterlist = filterlist  # 0 >> filtering persons
         self.__confidence = confidence
         self.__nmsthreshold = nmsthreshold
 
@@ -36,15 +36,3 @@ class PostProcessor:
         indices = cv2.dnn.NMSBoxes(
             self.__boxes, self.__confidences, self.__confidence, self.__nmsthreshold)
         return indices, self.__boxes, self.__classIDs, self.__confidences, self.__centers
-        # for i in indices:
-        #     i=i[0]
-        #     box=self.__boxes[i]
-        #     left=box[0]
-        #     top=box[1]
-        #     width=box[2]
-        #     height=box[3]
-        # return(image, self.__classIDs[i], self.__confidences[i], left,
-        #                    top, left + width, top + height, self.__centers)
-        #     self.draw_pred(image, self.__classIDs[i], self.__confidences[i], left,
-        #                    top, left + width, top + height)
-        # return self._centers
