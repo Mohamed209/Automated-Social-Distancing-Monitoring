@@ -1,4 +1,4 @@
-from src.object_detector.yolov3 import PeopleDetector
+from src.object_detector.yolov3 import YoloPeopleDetector
 from src.object_detector.postprocessor import PostProcessor
 from src.visualization.visualizer import CameraViz
 import cv2
@@ -9,7 +9,7 @@ import argparse
 import os
 
 # init yolo network , postprocessor and visualization mode
-net = PeopleDetector()
+net = YoloPeopleDetector()
 net.load_network()
 
 # Process inputs

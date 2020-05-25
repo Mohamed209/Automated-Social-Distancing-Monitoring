@@ -3,3 +3,4 @@ yolo_weights/
 __pycache__
 venv/
 data
+experiments/
