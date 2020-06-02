@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 
 
-class PeopleDetector:
+class YoloPeopleDetector:
     def __init__(self, yolocfg='yolo_weights/yolov3.cfg',
                  yoloweights='yolo_weights/yolov3.weights'):
         self.net = None

@@ -3,11 +3,22 @@ import cv2
 
 
 class Visualizer:
-    def __init__(self, labelpath='yolo_weights/coco.names', detected_object_rect_color=(255, 178, 50),
-                 detected_object_rect_thickness=3, label_font=cv2.FONT_HERSHEY_SIMPLEX, label_fontscale=0.5,
-                 label_font_thickness=1, label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0),
-                 critical_line_color=(0, 0, 255), critical_line_thickness=7):
-        self._labels = open(labelpath).read().strip().split("\n")
+    def __init__(self, critical_line_color=(0, 0, 255), critical_line_thickness=5):
+        self.critical_line_color = critical_line_color
+        self.critical_line_thickness = critical_line_thickness
+
+    def draw_pred(self):
+        pass
+
+
+class CameraViz(Visualizer):
+    def __init__(self, nmsboxes, frame, classIds, confs, boxes, centers, labelpath='yolo_weights/coco.names',
+                 detected_object_rect_color=(255, 178, 50), detected_object_rect_thickness=3,
+                 label_font=cv2.FONT_HERSHEY_SIMPLEX, label_fontscale=0.5, label_font_thickness=1,
+                 label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0)):
+        super().__init__()
+        self._labelpath = labelpath
+        self._labels = open(self._labelpath).read().strip().split("\n")
         self.detected_object_rect_color = detected_object_rect_color
         self.detected_object_rect_thickness = detected_object_rect_thickness
         self.label_font = label_font
@@ -15,13 +26,6 @@ class Visualizer:
         self.label_font_thickness = label_font_thickness
         self.label_rect_color = label_rect_color
         self.label_text_color = label_text_color
-        self.critical_line_color = critical_line_color
-        self.critical_line_thickness = critical_line_thickness
-
-
-class CameraViz(Visualizer):
-    def __init__(self, nmsboxes, frame, classIds, confs, boxes, centers):
-        super().__init__()
         self.__nmsboxes = nmsboxes
         self.__frame = frame
         self.__boxes = boxes
@@ -31,6 +35,7 @@ class CameraViz(Visualizer):
         self.__critical_dists = {}
 
     def draw_pred(self):
+        # TODO : more modularization of draw_pred() functions
         for i in self.__nmsboxes:
             i = i[0]
             box = self.__boxes[i]
@@ -56,7 +61,35 @@ class CameraViz(Visualizer):
                          self.critical_line_color, self.critical_line_thickness)
 
 
-class BirdseyeView(Visualizer):
-    def __init__(self):
+class BirdseyeViewTransformer:
+    '''
+    morphs the perspective view into a bird’s-eye (top-down) view
+    note : four_pts needs to be manually calibrated
+    '''
+
+    def __init__(self, four_pts=np.float32(
+            [[230, 730], [950, 950], [1175, 175], [1570, 230]]), scale_w=1.2/2, scale_h=4/2, frame):
+        self.__four_pts = four_pts
+        self.__scale_w = scale_w
+        self.__scale_h = scale_h
+        self.__dst = np.float32(
+            [[0, frame.shape[1]], [frame.shape[0], frame.shape[1]], [0, 0], [frame.shape[0], 0]])
+
+    def map_point_birdsview(self, point):
+        M = cv2.getPerspectiveTransform(self.__dst, self.__four_pts)
+        warped_pt = cv2.perspectiveTransform(point, M)[0][0]
+        warped_pt_scaled = [int(warped_pt[0] * self.__scale_w),
+                            int(warped_pt[1] * self.__scale_h)]
+        return warped_pt_scaled
+
+
+class BirdseyeViewViz(Visualizer):
+    def __init__(self, node_radius=10, color_node=(0, 255, 0), thickness_node=20, cents=None):
+        super().__init__()
+        self.node_radius = node_radius
+        self.color_node = color_node
+        self.thickness_node = thickness_node
+        self.__cents = cents
+
+    def draw_pred(self):
         pass
-    # TODO : to be implemented
