@@ -1,5 +1,7 @@
 from utils.utils import find_min_distance
 import cv2
+import numpy as np
+#from math import round
 
 
 class Visualizer:
@@ -15,7 +17,8 @@ class CameraViz(Visualizer):
     def __init__(self, nmsboxes, frame, classIds, confs, boxes, centers, labelpath='yolo_weights/coco.names',
                  detected_object_rect_color=(255, 178, 50), detected_object_rect_thickness=3,
                  label_font=cv2.FONT_HERSHEY_SIMPLEX, label_fontscale=0.5, label_font_thickness=1,
-                 label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0)):
+                 label_rect_color=(255, 255, 255), label_text_color=(0, 0, 0), meter_fontscale=1, meter_font_thickness=2,
+                 meter_text_color=(255, 0, 0)):
         super().__init__()
         self._labelpath = labelpath
         self._labels = open(self._labelpath).read().strip().split("\n")
@@ -26,6 +29,9 @@ class CameraViz(Visualizer):
         self.label_font_thickness = label_font_thickness
         self.label_rect_color = label_rect_color
         self.label_text_color = label_text_color
+        self.meter_fontscale = meter_fontscale
+        self.meter_font_thickness = meter_font_thickness
+        self.meter_text_color = meter_text_color
         self.__nmsboxes = nmsboxes
         self.__frame = frame
         self.__boxes = boxes
@@ -33,6 +39,7 @@ class CameraViz(Visualizer):
         self.__confs = confs
         self.__centers = centers
         self.__critical_dists = {}
+        self.__sev_idx = 0.0
 
     def draw_pred(self):
         # TODO : more modularization of draw_pred() functions
@@ -55,10 +62,15 @@ class CameraViz(Visualizer):
             cv2.putText(self.__frame, label, (left, top),
                         self.label_font, self.label_fontscale, self.label_text_color, self.label_font_thickness)
 
-            self.__critical_dists = find_min_distance(self.__centers)
+            self.__critical_dists, self.__sev_idx = find_min_distance(
+                self.__centers)
             for dist in self.__critical_dists:
                 cv2.line(self.__frame, dist[0], dist[1],
                          self.critical_line_color, self.critical_line_thickness)
+            # show severity index
+            self.__sev_idx = str(round(self.__sev_idx, 3)*100)+' %'
+            cv2.putText(self.__frame, "Severity Index : "+self.__sev_idx, (50, 50),
+                        self.label_font, self.meter_fontscale, self.meter_text_color, self.meter_font_thickness)
 
 
 class BirdseyeViewTransformer:
@@ -67,8 +79,8 @@ class BirdseyeViewTransformer:
     note : four_pts needs to be manually calibrated
     '''
 
-    def __init__(self, four_pts=np.float32(
-            [[230, 730], [950, 950], [1175, 175], [1570, 230]]), scale_w=1.2/2, scale_h=4/2, frame):
+    def __init__(self, frame, four_pts=np.float32(
+            [[230, 730], [950, 950], [1175, 175], [1570, 230]]), scale_w=1.2/2, scale_h=4/2):
         self.__four_pts = four_pts
         self.__scale_w = scale_w
         self.__scale_h = scale_h

@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import argparse
 import os
+import sys
 
 # init yolo network , postprocessor and visualization mode
 net = YoloPeopleDetector()
