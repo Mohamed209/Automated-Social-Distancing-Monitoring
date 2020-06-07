@@ -1,3 +1,5 @@
+[![forthebadge](https://forthebadge.com/images/badges/made-with-python.svg)](https://forthebadge.com)
+
 ## Open Source Implementation of landing AI Social Distancing Detector
 
 " In the fight against the coronavirus, social distancing has proven to be a very effective measure to slow down the spread of the disease. While millions of people are staying at home to help flatten the curve, many of our customers in the manufacturing and pharmaceutical industries are still having to go to work everyday to make sure our basic needs are met.
