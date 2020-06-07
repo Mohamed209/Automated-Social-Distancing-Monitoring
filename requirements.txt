@@ -3,8 +3,10 @@ Brotli==1.0.7
 click==7.1.2
 cycler==0.10.0
 dash==1.12.0
+dash-bootstrap-components==0.10.2
 dash-core-components==1.10.0
 dash-html-components==1.0.3
+dash-player==0.0.1
 dash-renderer==1.4.1
 dash-table==4.7.0
 Flask==1.1.2
