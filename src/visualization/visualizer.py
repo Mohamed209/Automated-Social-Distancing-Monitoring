@@ -38,7 +38,8 @@ class CameraViz(Visualizer):
         self.__classIds = classIds
         self.__confs = confs
         self.__centers = centers
-        self.__critical_dists = {}
+        self.critical_dists = {}
+        self.alldists = []
         self.__sev_idx = 0.0
 
     def draw_pred(self):
@@ -62,9 +63,10 @@ class CameraViz(Visualizer):
             cv2.putText(self.__frame, label, (left, top),
                         self.label_font, self.label_fontscale, self.label_text_color, self.label_font_thickness)
 
-            self.__critical_dists, self.__sev_idx = find_min_distance(
+            self.critical_dists, self.__sev_idx, self.alldists = find_min_distance(
                 self.__centers)
-            for dist in self.__critical_dists:
+            # TODO : move common attributes between camera and birds eye view to base class
+            for dist in self.critical_dists:
                 cv2.line(self.__frame, dist[0], dist[1],
                          self.critical_line_color, self.critical_line_thickness)
             # show severity index

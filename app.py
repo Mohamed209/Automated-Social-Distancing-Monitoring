@@ -3,15 +3,16 @@ import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objects as go
 import time
-from flask import Flask, Response
-from src.object_detector.yolov3 import YoloPeopleDetector
-from src.object_detector.postprocessor import PostProcessor
-from src.visualization.visualizer import CameraViz
-from dash.dependencies import Input, Output
 import cv2
 import dash_bootstrap_components as dbc
 import datetime
 import numpy as np
+from flask import Flask, Response
+from src.object_detector.yolov3 import YoloPeopleDetector
+from src.object_detector.postprocessor import PostProcessor
+from src.visualization.visualizer import CameraViz
+from src.data_feed.data_feeder import ViolationsFeed
+from dash.dependencies import Input, Output, State
 
 
 def stream_test_local_video(path):
@@ -21,11 +22,13 @@ def stream_test_local_video(path):
         # Capture frame-by-frame
         ret, frame = cap.read()
         if ret == True:
-            # outs = net.predict(frame)
-            # pp = PostProcessor()
-            # indices, boxes, ids, confs, centers = pp.process_preds(frame, outs)
-            # cameraviz = CameraViz(indices, frame, ids, confs, boxes, centers)
-            # cameraviz.draw_pred()
+            outs = net.predict(frame)
+            pp = PostProcessor()
+            indices, boxes, ids, confs, centers = pp.process_preds(frame, outs)
+            cameraviz = CameraViz(indices, frame, ids, confs, boxes, centers)
+            cameraviz.draw_pred()
+            # feed critical dists and non critical into viofeed
+            vf.feed_new((cameraviz.critical_dists, cameraviz.alldists))
             frame = cv2.imencode('.jpg', frame)[1].tobytes()
             yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         else:
@@ -66,7 +69,7 @@ app.layout = html.Div([dbc.Container(
 ),
     dcc.Interval(
     id='interval-component',
-    interval=1*1000,  # update graph every n*1000 millisecond
+    interval=5*1000,  # update graph every n*1000 millisecond
     n_intervals=0
 )]
 )
@@ -75,16 +78,25 @@ app.layout = html.Div([dbc.Container(
 @app.callback(Output('violations', 'figure'), [Input('interval-component', 'n_intervals')])
 def update_violations_graph(n):
     # data collection
-    t = []
-    for i in range(20):
-        t.append(datetime.datetime.now().second+i)
-    y = [np.cos(i) for i in t]
-    fig = go.Figure(data=[go.Line(x=t, y=y)])
+    vio, nonvio = vf.get_feed()
+    t = datetime.datetime.now()
+    fig.add_trace(go.Bar(name='Violations', x=[t], y=vio))
+    fig.add_trace(go.Bar(name='Non Violations', x=[t], y=nonvio))
+    # fig = go.Figure(data=[
+    #     go.Bar(name='Violations', x=[t], y=vio),
+    #     go.Bar(name='Non Violations', x=[t], y=nonvio)
+    # ])
+    vf.clear_feed()
     return fig
 
 
 if __name__ == '__main__':
-    # init yolo network , postprocessor and visualization mode
-    # net = YoloPeopleDetector()
-    # net.load_network()
+    # init data feed pipes
+    vf = ViolationsFeed()
+    fig = go.Figure()
+    fig.update_layout(
+        barmode='stack', title_text='Violations VS Non Violations Graph')
+    # init and load yolo network
+    net = YoloPeopleDetector()
+    net.load_network()
     app.run_server(debug=True)

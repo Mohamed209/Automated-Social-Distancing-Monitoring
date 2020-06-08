@@ -30,7 +30,7 @@ class YoloPeopleDetector:
         start = time.time()
         self.__layerouts = self.net.forward(self.__layer_names)
         end = time.time()
-        print("yolo took {:.6f} seconds".format(end - start))
+        #print("yolo took {:.6f} seconds".format(end - start))
         return(self.__layerouts)
 
     def clear_outs(self):
