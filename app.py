@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import time
 import cv2
 import dash_bootstrap_components as dbc
-import datetime
+from datetime import datetime
 import numpy as np
 import os
 from flask import Flask, Response
@@ -25,11 +25,11 @@ app = dash.Dash(__name__, server=server,
 
 
 # database
-class User(db.Model):
+class Violations(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    location = db.Column(db.String(50))
-    date_created = db.Column(db.DateTime, default=datetime.datetime.now)
+    violations = db.Column(db.Integer, nullable=False)
+    nonviolations = db.Column(db.Integer, nullable=False)
+    time = db.Column(db.DateTime, default=datetime.now())
 
 
 def stream_test_local_video(path):
@@ -45,18 +45,14 @@ def stream_test_local_video(path):
             cameraviz = CameraViz(indices, frame, ids, confs, boxes, centers)
             cameraviz.draw_pred()
             # feed critical dists and non critical into viofeed
-            vf.feed_new((cameraviz.critical_dists, cameraviz.alldists))
+            vf.feed_new(
+                (list(cameraviz.critical_dists.keys()), cameraviz.alldists))
             frame = cv2.imencode('.jpg', frame)[1].tobytes()
             yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         else:
             break
 
-# test db
-user = User(name='mossad', location='egypt')
-db.session.add(user)
-db.session.commit()
-data = User.query.all()
-print(data[0].name)
+
 @server.route('/video_feed')
 def video_feed():
     return Response(stream_test_local_video(path='data/test_videos/cut3.mp4'), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -94,26 +90,39 @@ app.layout = html.Div([dbc.Container(
 
 @app.callback(Output('violations', 'figure'), [Input('interval-component', 'n_intervals')])
 def update_violations_graph(n):
-    # data collection
-    vio, nonvio = vf.get_feed()
-    t = datetime.datetime.now()
+    # plotting variables
+    t = violist = nonviolist = []
+    vio, nonvio = vf.get_feed()  # get n frames accumulation
+    # insert new record
+    print("vio >> ", vio)
+    print("non vio >> ", nonvio)
+    db.session.add(Violations(
+        violations=vio, nonviolations=nonvio, time=datetime.now()))
+    db.session.commit()
+    # query all feed to plot
+    rows = Violations.query.all()
+    for r in rows:
+        t.append(r.time)
+        violist.append(r.violations)
+        nonviolist.append(r.nonviolations)
     fig = go.Figure(data=[
-        go.Bar(name='Violations', x=[t], y=vio),
-        go.Bar(name='Non Violations', x=[t], y=nonvio)
+        go.Bar(name='Violations', x=t, y=violist),
+        go.Bar(name='Non Violations', x=t, y=nonviolist)
     ])
+    fig.update_layout(
+        barmode='stack', title_text='Violations VS Non Violations Graph')
     vf.clear_feed()
     return fig
 
 
 if __name__ == '__main__':
-    # init data feed pipes
     vf = ViolationsFeed()
-    ## init vio graph ##
+    # init vio graph
     fig = go.Figure()
-    fig.update_layout(
-        barmode='stack', title_text='Violations VS Non Violations Graph')
-    ## vio graph ##
-
+    # init violations db
+    db.session.add(Violations(violations=0, nonviolations=0,
+                              time=datetime.now()))
+    db.session.commit()
     # init and load yolo network
     net = YoloPeopleDetector()
     net.load_network()

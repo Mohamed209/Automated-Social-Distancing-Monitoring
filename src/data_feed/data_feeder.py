@@ -1,3 +1,6 @@
+import datetime
+
+
 class DataFeed:
     '''
     acts as base class for data sources pipes
@@ -24,15 +27,17 @@ class ViolationsFeed(DataFeed):
     def __init__(self):
         super().__init__()
         self.viofeed = []
+        self.nonviofeed = []
         self.vio = 0
         self.nonvio = 0
 
     def feed_new(self, new_feed: tuple):
-        self.viofeed.append(new_feed)
+        self.viofeed.append(new_feed[0])
+        self.nonviofeed.append(new_feed[1])
 
     def get_feed(self):
-        self.vio = [len(i[0]) for i in self.viofeed]
-        self.nonvio = [len(i[1]) for i in self.viofeed]
+        self.vio = sum([len(i) for i in self.viofeed])
+        self.nonvio = sum([len(i) for i in self.nonviofeed])
         return self.vio, self.nonvio
 
     def clear_feed(self):
