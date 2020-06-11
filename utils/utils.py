@@ -1,5 +1,5 @@
 import itertools
-
+import cv2
 import numpy as np
 
 
@@ -14,7 +14,7 @@ def find_min_distance(centers, min_dist=150):
         if ecdist < min_dist:
             critical_distances.update({pts: ecdist})
     severity_index = len(critical_distances)/len(comp)
-    return critical_distances , severity_index
+    return critical_distances, severity_index, comp
 
 
 def get_camera_perspective(img, src_points):
