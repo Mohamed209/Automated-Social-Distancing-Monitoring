@@ -32,6 +32,12 @@ class Violations(db.Model):
     time = db.Column(db.DateTime, default=datetime.now())
 
 
+class Sevidx(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sev = db.Column(db.Float, nullable=False)
+    time = db.Column(db.DateTime, default=datetime.now())
+
+
 def stream_test_local_video(path):
     cap = cv2.VideoCapture(path)
     # Read until video is completed
@@ -46,7 +52,7 @@ def stream_test_local_video(path):
             cameraviz.draw_pred()
             # feed critical dists and non critical into viofeed
             vf.feed_new(
-                (list(cameraviz.critical_dists.keys()), cameraviz.alldists))
+                (list(cameraviz.critical_dists.keys()), cameraviz.alldists, cameraviz.sev_idx))
             frame = cv2.imencode('.jpg', frame)[1].tobytes()
             yield (b'--frame\r\n'b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         else:
@@ -72,7 +78,7 @@ app.layout = html.Div([dbc.Container(
         ),
         dbc.Row(
             [
-                dbc.Col(dcc.Graph(id="phones-graphh")),
+                dbc.Col(dcc.Graph(id="sev-idx")),
                 dbc.Col(dcc.Graph(id="phones-graphhh"))
             ],
             align="start",
@@ -91,8 +97,8 @@ app.layout = html.Div([dbc.Container(
 @app.callback(Output('violations', 'figure'), [Input('interval-component', 'n_intervals')])
 def update_violations_graph(n):
     # plotting variables
-    t = violist = nonviolist = []
-    vio, nonvio = vf.get_feed()  # get n frames accumulation
+    t, violist, nonviolist = [], [], []
+    vio, nonvio, _ = vf.get_feed()  # get n frames accumulation
     # insert new record
     print("vio >> ", vio)
     print("non vio >> ", nonvio)
@@ -105,23 +111,46 @@ def update_violations_graph(n):
         t.append(r.time)
         violist.append(r.violations)
         nonviolist.append(r.nonviolations)
-    fig = go.Figure(data=[
+    fig1 = go.Figure(data=[
         go.Bar(name='Violations', x=t, y=violist),
         go.Bar(name='Non Violations', x=t, y=nonviolist)
     ])
-    fig.update_layout(
+    fig1.update_layout(
         barmode='stack', title_text='Violations VS Non Violations Graph')
     vf.clear_feed()
-    return fig
+    return fig1
+
+
+@app.callback(Output('sev-idx', 'figure'), [Input('interval-component', 'n_intervals')])
+def update_sevidx_graph(n):
+    # plotting variables
+    t, sevidx = [], []
+    _, _, sev = vf.get_feed()  # get n frames accumulation
+    # insert new record
+    db.session.add(Sevidx(sev=sev, time=datetime.now()))
+    db.session.commit()
+    # query all feed to plot
+    rows = Sevidx.query.all()
+    for r in rows:
+        t.append(r.time)
+        sevidx.append(r.sev)
+    fig2 = go.Figure(data=[
+        go.Line(name='Severity Index', x=t, y=sevidx)
+    ])
+    fig2.update_layout(title_text='Severity Index Over Time')
+    vf.clear_feed()
+    return fig2
 
 
 if __name__ == '__main__':
     vf = ViolationsFeed()
     # init vio graph
-    fig = go.Figure()
+    fig1 = go.Figure()
+    fig2 = go.Figure()
     # init violations db
     db.session.add(Violations(violations=0, nonviolations=0,
                               time=datetime.now()))
+    db.session.add(Sevidx(sev=0.0, time=datetime.now()))
     db.session.commit()
     # init and load yolo network
     net = YoloPeopleDetector()
