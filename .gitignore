@@ -2,5 +2,5 @@ yolo_weights/
 .vscode/
 __pycache__
 venv/
-data
+data/test_videos/
 experiments/
