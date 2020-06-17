@@ -2,5 +2,6 @@ yolo_weights/
 .vscode/
 __pycache__
 venv/
-data/test_videos/
+test_data/
 experiments/
+.ipynb_checkpoints/
