@@ -10,7 +10,7 @@ dash-player==0.0.1
 dash-renderer==1.4.1
 dash-table==4.7.0
 decorator==4.4.2
-Flask==1.1.2
+Flask==2.3.2
 Flask-Compress==1.5.0
 Flask-SQLAlchemy==2.4.3
 future==0.18.2
